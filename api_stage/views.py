@@ -1,13 +1,20 @@
 from django.http.response import JsonResponse
 # Add to upload files
 from rest_framework import status
-from rest_framework.decorators import api_view
+# from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
-from rest_framework.response import Response
+# from rest_framework.response import Response
 
 # Importation of models and serializers
 from api_stage.models import (Users, Posts, Comments)
 from api_stage.serializers import (UserSerializer, PostSerializer, FileSerializer, CommentSerializer)
+# Jwt Logging
+from rest_framework.response import Response
+from rest_framework import exceptions
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
+from django.views.decorators.csrf import ensure_csrf_cookie
+from api_stage.utils import generate_access_token
 
 
 # Create your views here.
@@ -80,7 +87,7 @@ def manage_posts(request):
 
         # keys = request.GET.get('mots_recherche', None)
         # if keys is not None:
-        #     posts = posts.filter(keys__icontains=keys)
+        #     posts = posts.filter(keys__contains=keys)
 
         posts_serializer = PostSerializer(posts, many=True)
         return JsonResponse(posts_serializer.data, safe=False)
@@ -178,6 +185,34 @@ def handle_uploaded_file(f):
 # # Get the JWT settings
 # jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 # jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@ensure_csrf_cookie
+def login_view(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    response = Response()
+    if (username is None) or (password is None):
+        raise exceptions.AuthenticationFailed(
+            'username and password required')
+
+    user = Users.objects.filter(username=username).first()
+    if user is None:
+        raise exceptions.AuthenticationFailed('user not found')
+
+    serialized_user = UserSerializer(user).data
+
+    access_token = generate_access_token(user)
+    # refresh_token = generate_refresh_token(user)
+    #
+    # response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
+    response.data = {
+        'access_token': access_token,
+        'user': serialized_user,
+    }
+
+    return response
 
 
 # ***************************************************#

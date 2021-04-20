@@ -7,6 +7,7 @@ urlpatterns = [
     url(r'^api/v1/posts$', views.manage_posts),
     url(r'^api/v1/posts/(?P<pk>[0-9]+)$', views.posts_detail),
     url(r'^api/v1/upload$', views.file_store),
+    url(r'^api/v1/login', views.login_view),
     url(r'^api/v1/comments$', views.manage_comments),
     url(r'^api/v1/comments/(?P<pk>[0-9]+)$', views.comments_detail),
 ]

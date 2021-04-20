@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 3rd party apps
+    'corsheaders',
     # Django REST framework
     'rest_framework',
     # ApiStage application
@@ -72,6 +74,23 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'stage_application.wsgi.application'
+
+CORS_ALLOW_CREDENTIALS = True # to accept cookies via ajax request
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:8081' # the domain for front-end app(you can add more than 1)
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_ClASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    )
+}
+
+AUTH_USER_MODEL = 'api_stage.Users'
+
 
 
 # Database
@@ -136,4 +155,3 @@ STATIC_URL = '/static/'
 # Add Media Url and media roots
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-
