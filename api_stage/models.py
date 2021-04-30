@@ -1,32 +1,23 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+
+
 # from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 
 # Create your models here.
 class Users(AbstractUser):
-    first_name = models.CharField(max_length=250, blank=False, default='')
-    last_name = models.CharField(max_length=250, blank=False, default='')
     username = models.CharField(max_length=250, blank=False, default='', unique=True)
-    GENDER_CHOICES = (
-        ('M', 'Male'),
-        ('F', 'Female'),
-    )
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    # gender = models.CharField(max_length=1, blank=False, default='')
-    date_birth = models.DateField(null=True, blank=True)
-    profession = models.CharField(max_length=250, blank=False, default='')
-    phone = models.CharField(max_length=12, blank=False, unique=True, default='')
     email = models.EmailField(
         verbose_name='email address',
         max_length=255,
         unique=True
     )
     password = models.CharField(max_length=250, blank=False, default='')
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_now_add=True)
+    # is_active = models.BooleanField(default=True)
+    # is_staff = models.BooleanField(default=False)
+    # is_superuser = models.BooleanField(default=False)
+    # date_joined = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now_add=True)
 
@@ -35,6 +26,28 @@ class Users(AbstractUser):
         #    to set table name in database
         #
         db_table = "users"
+
+
+class UserProfiles(models.Model):
+    first_name = models.CharField(max_length=250, blank=False, default='')
+    last_name = models.CharField(max_length=250, blank=False, default='')
+    GENDER_CHOICES = (
+        ('M', 'Male'),
+        ('F', 'Female'),
+    )
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    date_birth = models.DateField(null=True, blank=True)
+    profession = models.CharField(max_length=250, blank=False, default='')
+    phone = models.CharField(max_length=12, blank=False, unique=True, default='')
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        #
+        #    to set table name in database
+        #
+        db_table = "profiles"
 
 
 class Posts(models.Model):

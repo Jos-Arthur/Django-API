@@ -6,8 +6,8 @@ from rest_framework.parsers import JSONParser
 # from rest_framework.response import Response
 
 # Importation of models and serializers
-from api_stage.models import (Users, Posts, Comments)
-from api_stage.serializers import (UserSerializer, PostSerializer, FileSerializer, CommentSerializer)
+from api_stage.models import (Users, UserProfiles, Posts, Comments)
+from api_stage.serializers import (UserSerializer, ProfileSerializer, PostSerializer, FileSerializer, CommentSerializer)
 # Jwt Logging
 from rest_framework.response import Response
 from rest_framework import exceptions
@@ -15,6 +15,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from django.views.decorators.csrf import ensure_csrf_cookie
 from api_stage.utils import generate_access_token
+from django.contrib.auth.hashers import make_password, check_password
+
+# To encrypt password
+from django.contrib.auth.hashers import make_password
 
 
 # Create your views here.
@@ -33,6 +37,10 @@ def manage_users(request):
 
     elif request.method == 'POST':
         users_data = JSONParser().parse(request)
+        users_data['username'] = users_data['username']
+        users_data['email'] = users_data['email']
+        users_data['password'] = make_password(users_data['password'])
+
         users_serializer = UserSerializer(data=users_data)
         if users_serializer.is_valid():
             users_serializer.save()
@@ -74,6 +82,62 @@ def users_detail(request, pk):
     elif request.method == 'DELETE':
         user.delete()
         return JsonResponse({'message': 'User was deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ***************************************************#
+# ********* Profile Manage API ************************#
+# ***************************************************#
+
+@api_view(['GET', 'POST', 'DELETE'])
+def manage_profiles(request):
+    if request.method == 'GET':
+        profiles = UserProfiles.objects.all()
+        profiles_serializer = ProfileSerializer(profiles, many=True)
+        return JsonResponse(profiles_serializer.data, safe=False)
+        # 'safe=False' for objects serialization
+
+    elif request.method == 'POST':
+        profiles_data = JSONParser().parse(request)
+        profiles_serializer = ProfileSerializer(data=profiles_data)
+        if profiles_serializer.is_valid():
+            profiles_serializer.save()
+            status_code = status.HTTP_201_CREATED
+            response = {
+                'success': 'True',
+                'status code': status_code,
+                'message': 'User Profile successfully created',
+            }
+            return Response(response, status=status_code)
+        return JsonResponse(profiles_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        count = UserProfiles.objects.all().delete()
+        return JsonResponse({'message': '{} user profile were deleted successfully!'.format(count[0])},
+                            status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def profiles_detail(request, pk):
+    try:
+        profile = UserProfiles.objects.get(pk=pk)
+    except UserProfiles.DoesNotExist:
+        return JsonResponse({'message': 'The user profile does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        profiles_serializer = UserSerializer(profile)
+        return JsonResponse(profiles_serializer.data)
+
+    elif request.method == 'PUT':
+        profiles_data = JSONParser().parse(request)
+        profiles_serializer = ProfileSerializer(profile, data=profiles_data)
+        if profiles_serializer.is_valid():
+            profiles_serializer.save()
+            return JsonResponse(profiles_serializer.data)
+        return JsonResponse(profiles_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        profile.delete()
+        return JsonResponse({'message': 'User profile was deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
 
 
 # ***************************************************#
@@ -193,15 +257,21 @@ def login_view(request):
     username = request.data.get('username')
     password = request.data.get('password')
     response = Response()
+
     if (username is None) or (password is None):
         raise exceptions.AuthenticationFailed(
             'username and password required')
 
     user = Users.objects.filter(username=username).first()
+
     if user is None:
         raise exceptions.AuthenticationFailed('user not found')
+    if not user.check_password(password):
+        raise exceptions.AuthenticationFailed('wrong password')
 
     serialized_user = UserSerializer(user).data
+
+    # serialized_profile = ProfileSerializer(user).data
 
     access_token = generate_access_token(user)
     # refresh_token = generate_refresh_token(user)
@@ -210,6 +280,7 @@ def login_view(request):
     response.data = {
         'access_token': access_token,
         'user': serialized_user,
+        # 'profile': serialized_profile,
     }
 
     return response
